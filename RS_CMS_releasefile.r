@@ -8,7 +8,6 @@
 #  
 ################################################################################
 
-
 rm(list=ls())
 
 #######################   libraries and functions   ############################
@@ -56,7 +55,7 @@ for (j in 2:max(co$V3))  {
 pol = SpatialPolygons(oldpol)
 polynams <- over(pts, pol)
 rel <- cbind(polynams, dat)
-rel                                     # file coded with polygon numbers
+rel                                          # file coded with polygon numbers
 
 points(rel$lon, rel$lat, pch=19, cex=0.5, col=rel$polynams/rel$polynams+1)
 
@@ -173,7 +172,7 @@ length(which(rel$depest<45))
 length(which(rel$depest>=45))
 
 rel$spawndep <- rel$depest - 2                     # set spawning 2m above ocean floor
-rel$spawndep[which(rel$spawndep > 45)] <- 45       # for >45m, set at 45m
+rel$spawndep[which(rel$spawndep > 45)] <- 45       # for deeper than 45m, set at 45m
 
 minspawndep <- 15                   #  minimum spawning depth set at 15m based on literature
 
@@ -228,11 +227,12 @@ head(rel1)
 m <- rel1       # 'm' is list of release sites with columns: polygon, lon, lat, number of releases
 head(m)
 
-m$N <- m$N / 2.01   # 4.3 # * 3.1   #  18.9              #  / 2.01 works for LoRes
+m$N <- m$N / 2.11   #   try different combinations to ensure adequate sample size; < 0.5 gets rounded out to nearest particle below
 mean(m$N); min(m$N); max(m$N)
 which(m$N==0)
 
 prod(nrow(lis), nrow(m))
+
 ###################### now, making the release file ############################
 
 mat <- as.data.frame(matrix(data=NA, nrow=nrow(lis)*nrow(m), ncol=9))   # empty matrix to be filled
@@ -251,25 +251,25 @@ mat[,9] <- 0                                                            # column
 mat[,10] <- rep(lis[,4], nrow(m))                                       # column 10: scale by spawning activity!!!!
 sum(mat[,5])
 
-mat <- mat[order(mat[,6], mat[,7], mat[,8]), ] # !!!!  REORDER SO DATES ARE TOGETHER   !!!!
+mat <- mat[order(mat[,6], mat[,7], mat[,8]), ]                          # !!!!  REORDER SO DATES ARE TOGETHER   !!!!
 head(mat)
 
-x <- mat$V5 * mat$V10
+x <- mat$V5 * mat$V10                                                   
 mean(x); min(x); max(x)
 
-mat$V5 <- round(mat$V5 * mat$V10)
+mat$V5 <- round(mat$V5 * mat$V10)                                       # multiply by spawning activity and round to nearest particle
 sum(mat[,5])
 head(mat)
 
-matfin <- mat[-c(10)]
+matfin <- mat[-c(10)]                                                   # get rid of spawning activity column
 head(matfin)
 dim(matfin)
-table((matfin$V5 > 0))
-mean(matfin$V5); min(matfin$V5); max(matfin$V5)
+table((matfin$V5 > 0))                                                  # how many rows have particle values >0? 
+mean(matfin$V5); min(matfin$V5); max(matfin$V5)                         # what percentage of particles get lost by rounding
 
-tapply(x, (matfin$V5 > 0), sum)/sum(x)
+tapply(x, (matfin$V5 > 0), sum)/sum(x)                                  # what percentage of particles get lost by rounding?
 
-matfin <- matfin[which(matfin$V5 >0),]
+matfin <- matfin[which(matfin$V5 >0),]                                  # take out zeros
 
 head(matfin)
 dim(matfin)
@@ -278,22 +278,18 @@ sum(matfin$V5)
 
 getwd()
 dim(matfin)
-dim(matfin)/8
+dim(matfin)/8         
 
-
-k <- max(which((nrow(matfin)/33:64 - round(nrow(matfin)/33:64))==0) + 32)    # calculates number of nodes which should be used.
+k <- max(which((nrow(matfin)/33:64 - round(nrow(matfin)/33:64))==0) + 32)    # calculates number of nodes which should be used on HPC
 print(paste("Use", k, "nodes."), sep=" ", quote=F)
 
+write.table(matfin, file="RS_releaseFile20032017.txt", sep="\t", col.names=F, row.names=F)          # WRITE FILE TO TXT
 
-#mat1 <- mat[which(mat$V6==2014),]; dim(mat1)
-#write.table(mat1, file="C:/Users/mkarnauskas/Desktop/red_snapper/Jan2015/RSrel2014.txt", sep="\t", col.names=F, row.names=F)          # WRITE FILE TO TXT
+####################     end construction of release file    ###################
 
-write.table(matfin, file="C:/Users/mkarnauskas/Desktop/red_snapper/Mar2016/RS_FaReg_10perLoss_15mCut.txt", sep="\t", col.names=F, row.names=F)          # WRITE FILE TO TXT
+################    double check that matrix came out ok     ###################
 
-
-# double check
-
-table(matfin$V6, matfin$V7)
+table(matfin$V6, matfin$V7)       # numbers in columns should be same
 table(matfin$V6)
 matplot(table(matfin$V7, matfin$V6), type="l")
 diff(table(matfin$V6))
@@ -307,6 +303,4 @@ plotonmap(matfin$V5[f], matfin$V2[f], matfin$V3[f], cexnum=0.6, pchnum=15)
 f <- which(matfin$V6==2003 & matfin$V7 == 6 & matfin$V8 == 24); length(f)
 plotonmap(matfin$V5[f], matfin$V2[f], matfin$V3[f], cexnum=0.6, pchnum=15)
 
-
-
-#################### end release file-making #####################################
+##################################   END    ####################################
