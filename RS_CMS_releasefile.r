@@ -12,7 +12,7 @@ rm(list=ls())
 
 #######################   libraries and functions   ############################
 if (!"ncdf4" %in% installed.packages()) install.packages("ncdf4", repos='http://cran.us.r-project.org')
-library(maps)
+library(ncdf4)
 if (!"sp" %in% installed.packages()) install.packages("sp", repos='http://cran.us.r-project.org')
 library(sp)
 if (!"splancs" %in% installed.packages()) install.packages("splancs", repos='http://cran.us.r-project.org')
@@ -172,7 +172,7 @@ length(which(rel$depest<45))
 length(which(rel$depest>=45))
 
 rel$spawndep <- rel$depest - 2                     # set spawning 2m above ocean floor
-rel$spawndep[which(rel$spawndep > 45)] <- 45       # for deeper than 45m, set at 45m
+rel$spawndep[which(rel$spawndep > 45)] <- 45       # for deeper th 45m, set at 45m
 
 minspawndep <- 15                   #  minimum spawning depth set at 15m based on literature
 
@@ -199,12 +199,14 @@ days$da <- as.numeric(substr(days$dates, 9, 10))
 
 days <- days[which(days$mo > 4 & days$mo < 9),]     # spawning occurs May - Aug
 days <- days[seq(1, nrow(days), 3),]                # spawning every 3 days
-lis <- days[, 2:4]
+lis <- days[, 2:4]                                  
 dim(lis)
 
 table(lis$yr)
 table(lis$yr, lis$mo)
-lis <- lis[-which(lis$mo==5 & lis$da==1),]    # take one day out so that there are 10 release days per month
+lis <- lis[-which(lis$mo==5 & lis$da==1),]        # take one day out so that there are 10 release days per month
+
+lis <- lis[seq(1, nrow(lis), 2),]                # can use every 6 days -- half computation time, sensitivity shows no difference in results
 
 dim(lis)
 table(lis$yr, lis$mo)
@@ -224,11 +226,12 @@ lis <- lis[-c(4)]                                                               
 
 rel1 <- rel[-c(5)]
 head(rel1)
+
 m <- rel1       # 'm' is list of release sites with columns: polygon, lon, lat, number of releases
 head(m)
 
-m$N <- m$N / 2.11   #   try different combinations to ensure adequate sample size; < 0.5 gets rounded out to nearest particle below
-mean(m$N); min(m$N); max(m$N)
+m$N <- m$N / 2.03   #   try different combinations to ensure adequate sample size; < 0.5 gets rounded out to nearest particle below
+mean(m$N); min(m$N); max(m$N)                                     #  2.11  for 3-day works
 which(m$N==0)
 
 prod(nrow(lis), nrow(m))
@@ -283,7 +286,7 @@ dim(matfin)/8
 k <- max(which((nrow(matfin)/33:64 - round(nrow(matfin)/33:64))==0) + 32)    # calculates number of nodes which should be used on HPC
 print(paste("Use", k, "nodes."), sep=" ", quote=F)
 
-write.table(matfin, file="RS_releaseFile20032017.txt", sep="\t", col.names=F, row.names=F)          # WRITE FILE TO TXT
+write.table(matfin, file="RS_releaseFile20032017_6d.txt", sep="\t", col.names=F, row.names=F)          # WRITE FILE TO TXT
 
 ####################     end construction of release file    ###################
 
